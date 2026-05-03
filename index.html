@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Shape AI PRO FINAL</title>
+<title>Shape AI  by Mr. Bilişim</title>
 
 <style>
 body{margin:0;overflow:hidden;background:#050714;font-family:Arial;}
@@ -37,6 +37,21 @@ width:340px;padding:15px;color:#0ff;
 background:rgba(0,0,0,0.6);
 border:2px solid #0ff;border-radius:12px;
 }
+
+#tutorialBox{
+position:absolute;left:50%;bottom:20px;
+transform:translateX(-50%);
+min-width:260px;
+max-width:80%;
+padding:12px 16px;
+background:#00ffff;
+color:#000;
+border-radius:12px;
+box-shadow:0 0 20px rgba(0,255,255,0.25);
+display:none;
+text-align:center;
+font-weight:700;
+}
 </style>
 </head>
 
@@ -44,8 +59,8 @@ border:2px solid #0ff;border-radius:12px;
 
 <!-- INTRO -->
 <div id="intro">
-<h1>Shape AI PRO FINAL</h1>
-<p>🎤 Basılı tut → konuş<br>🎮 Blender gibi stabil editör</p>
+<h1>Shape AI </h1>
+<p>by Mr. Bilişim <br>Bu uygulama kişilerin 3D ve diğer geometrik şekilleri öğrenmek için geliştirilmiştir</p>
 <button onclick="startApp()">BAŞLAT</button>
 </div>
 
@@ -60,6 +75,7 @@ border:2px solid #0ff;border-radius:12px;
 </div>
 
 <div id="info">Şekil seç</div>
+<div id="tutorialBox"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -74,10 +90,29 @@ msg.lang="tr-TR";
 speechSynthesis.speak(msg);
 }
 
+function showTutorial(text){
+const box=document.getElementById("tutorialBox");
+if(!box) return;
+box.textContent=text;
+box.style.display="block";
+speak(text);
+}
+
 /* ================= START ================= */
 function startApp(){
 document.getElementById("intro").style.display="none";
-speak("Sistem başlatıldı");
+setTimeout(()=>showTutorial("Shape AI uygulamasına hoş geldin."),800);
+
+setTimeout(()=>showTutorial("Şekilleri yazı veya sesle oluşturabilirsin."),4000);
+
+setTimeout(()=>showTutorial("Bir şekle tıklayıp X Y Z ile hareket ettirebilirsin."),8000);
+
+setTimeout(()=>showTutorial("Animasyon ve temizleme sistemleri aktiftir."),12000);
+
+setTimeout(()=>{
+const t = document.getElementById("tutorialBox");
+if(t) t.style.display = "none";
+},16000);
 }
 
 /* ================= SCENE ================= */
@@ -147,25 +182,25 @@ let anim=true;
 /* ================= SHAPES (50+) ================= */
 const shapes = {
 
-box:{geo:()=>new THREE.BoxGeometry(2,2,2),name:"Küp",desc:"3D küp"},
-sphere:{geo:()=>new THREE.SphereGeometry(1.2,32,32),name:"Küre",desc:"Yuvarlak"},
-cone:{geo:()=>new THREE.ConeGeometry(1,2,32),name:"Koni",desc:"Sivri"},
-cylinder:{geo:()=>new THREE.CylinderGeometry(1,1,2,32),name:"Silindir",desc:"Tabanlı"},
-circle:{geo:()=>new THREE.CircleGeometry(1.5,32),name:"Daire",desc:"2D"},
+box:{geo:()=>new THREE.BoxGeometry(2,2,2),name:"Küp",desc:"Küp, üç boyutlu bir geometrik cisimdir ve tüm yüzleri kare şeklindedir. Toplam 6 yüzü, 12 ayrıtı (kenarı) ve 8 köşesi bulunur. Küpün en önemli özelliği, bütün kenarlarının eşit uzunlukta olması ve tüm yüzlerinin birbirine dik olmasıdır. Bu nedenle küp, düzgün çokyüzlüler arasında yer alır."},
+sphere:{geo:()=>new THREE.SphereGeometry(1.2,32,32),name:"Küre",desc:"Küre, üç boyutlu bir geometrik cisimdir ve yüzeyi tamamen eğridir; yani düz bir yüzü, ayrıtı veya köşesi yoktur. Küre, bir merkez noktaya eşit uzaklıktaki tüm noktaların oluşturduğu şekildir. Bu nedenle tamamen simetrik bir yapıya sahiptir."},
+cone:{geo:()=>new THREE.ConeGeometry(1,2,32),name:"Koni",desc:"Koni, üç boyutlu bir geometrik cisimdir. Bir daire tabanı ve bu tabanın çevresindeki tüm noktaların tepe adı verilen tek bir noktaya birleşmesiyle oluşur. Koni, bir taban ve bir yan yüzeyden oluşur. Tabanı daire şeklindedir, yan yüzeyi ise eğridir ve tepe noktasında sonlanır."},
+cylinder:{geo:()=>new THREE.CylinderGeometry(1,1,2,32),name:"Silindir",desc:"Silindir, üç boyutlu bir geometrik cisimdir. Alt ve üst olmak üzere birbirine paralel ve eş iki daire tabanı ile bu tabanları birleştiren eğri bir yan yüzeyden oluşur. Silindirin köşesi yoktur ve ayrıt olarak yalnızca tabanların çevresini oluşturan dairesel sınırlar bulunur."},
+circle:{geo:()=>new THREE.CircleGeometry(1.5,32),name:"Daire",desc:"Daire, düzlemde bulunan iki boyutlu bir geometrik şekildir. Bir merkez noktasına eşit uzaklıktaki tüm noktaların oluşturduğu kapalı şekle daire denir. Dairenin iç bölgesiyle birlikte tamamına daire, sadece sınırına ise çember denir."},
 
 box_small:{geo:()=>new THREE.BoxGeometry(1,1,1),name:"Küçük Küp",desc:"Mini küp"},
 sphere_big:{geo:()=>new THREE.SphereGeometry(2,32,32),name:"Büyük Küre",desc:"Büyük küre"},
 
-torus:{geo:()=>new THREE.TorusGeometry(1,0.4,16,100),name:"Halka",desc:"Donut"},
-capsule:{geo:()=>new THREE.CapsuleGeometry(0.5,1,16,32),name:"Kapsül",desc:"Yuvarlak uç"},
+torus:{geo:()=>new THREE.TorusGeometry(1,0.4,16,100),name:"Halka",desc:"Halka, düzlemde iç içe geçmiş iki daire arasında kalan bölgedir. Yani biri büyük, biri küçük olmak üzere aynı merkezli iki dairenin arasındaki boşluk halka olarak adlandırılır. Bu nedenle halka, ortası boş olan bir daire şeklindedir."},
+capsule:{geo:()=>new THREE.CapsuleGeometry(0.5,1,16,32),name:"Kapsül",desc:"Kapsül, düzlemde ve üç boyutta kullanılabilen bir geometrik şekildir. En yaygın anlamıyla, bir dikdörtgenin iki kısa kenarına yarım daireler eklenmesiyle oluşan yuvarlatılmış bir şekildir. Bu nedenle kapsül, hem düz kenarlara hem de eğri sınırlara sahiptir."},
 
-tetrahedron:{geo:()=>new THREE.TetrahedronGeometry(1),name:"Piramit",desc:"4 yüzlü"},
+tetrahedron:{geo:()=>new THREE.TetrahedronGeometry(1),name:"Piramit",desc:"Piramit, üç boyutlu bir geometrik cisimdir. Bir taban çokgeni ve bu tabanın tüm köşelerinin tek bir tepe noktasında birleşmesiyle oluşur. Tabanı üçgen, kare veya daha fazla kenarlı bir çokgen olabilir. İsimlendirme de taban şekline göre yapılır; örneğin kare tabanlı piramit, üçgen tabanlı piramit gibi."},
 octahedron:{geo:()=>new THREE.OctahedronGeometry(1),name:"Sekizgen",desc:"8 yüzlü"},
 dodecahedron:{geo:()=>new THREE.DodecahedronGeometry(1),name:"12 Yüzlü",desc:"Çok yüzlü"},
 icosahedron:{geo:()=>new THREE.IcosahedronGeometry(1),name:"20 Yüzlü",desc:"Küresel"},
 
-square:{geo:()=>new THREE.PlaneGeometry(2,2),name:"Kare",desc:"2D kare"},
-triangle:{geo:()=>new THREE.ConeGeometry(1,2,3),name:"Üçgen",desc:"3 köşeli"},
+square:{geo:()=>new THREE.PlaneGeometry(2,2),name:"Kare",desc:"Kare, iki boyutlu bir geometrik şekildir ve düzgün dörtgendir. Dört kenarı ve dört köşesi vardır. En önemli özelliği, tüm kenarlarının eşit uzunlukta ve tüm iç açılarının 90 derece olmasıdır."},
+triangle:{geo:()=>new THREE.ConeGeometry(1,2,3),name:"Üçgen",desc:"Üçgen, üç kenarı ve üç köşesi olan iki boyutlu bir geometrik şekildir. En basit çokgenlerden biridir. Üç doğru parçasının uç uca bağlanmasıyla oluşur."},
 diamond:{geo:()=>new THREE.OctahedronGeometry(1.2),name:"Elmas",desc:"Parlak"}
 
 };
@@ -262,6 +297,7 @@ objects.forEach(o=>scene.remove(o));
 objects=[];
 transform.detach();
 selected=null;
+speechSynthesis.cancel();
 speak("temizlendi");
 }
 
