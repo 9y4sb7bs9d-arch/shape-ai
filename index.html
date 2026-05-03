@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Shape AI  by Mr. Bilişim</title>
+
+<style>
+body{margin:0;overflow:hidden;background:#050714;font-family:Arial;}
+
+#intro{
+position:absolute;width:100%;height:100%;
+background:black;color:#0ff;
+display:flex;flex-direction:column;
+justify-content:center;align-items:center;
+text-align:center;padding:25px;z-index:20;
+}
+
+#panel{
+position:absolute;top:20px;left:20px;
+background:rgba(0,255,255,0.06);
+padding:12px;border:1px solid #0ff;
+border-radius:10px;z-index:10;color:#0ff;
+}
+
+input{width:220px;padding:6px;background:#111;color:#0ff;border:none;border-radius:6px;}
+button{margin-top:5px;padding:6px;background:#0ff;border:none;border-radius:6px;cursor:pointer;}
+
+#micBtn{
+background:#00ffff;
+color:black;
+font-weight:bold;
+}
+
+#info{
+position:absolute;right:20px;top:20px;
+width:340px;padding:15px;color:#0ff;
+background:rgba(0,0,0,0.6);
+border:2px solid #0ff;border-radius:12px;
+}
+
+#tutorialBox{
+position:absolute;left:50%;bottom:20px;
+transform:translateX(-50%);
+min-width:260px;
+max-width:80%;
+padding:12px 16px;
+background:#00ffff;
+color:#000;
+border-radius:12px;
+box-shadow:0 0 20px rgba(0,255,255,0.25);
+display:none;
+text-align:center;
+font-weight:700;
+}
+</style>
+</head>
+
+<body>
+
+<!-- INTRO -->
+<div id="intro">
+<h1>Shape AI </h1>
+<p>by Mr. Bilişim <br>Bu uygulama kişilerin 3D ve diğer geometrik şekilleri öğrenmek için geliştirilmiştir</p>
+<button onclick="startApp()">BAŞLAT</button>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+<input id="cmd" placeholder="küp, küre, piramit...">
+<br>
+<button onclick="run()">Çiz</button>
+<button id="micBtn">🎤 BASILI TUT</button>
+<button onclick="toggleAnim()">Animasyon</button>
+<button onclick="clearScene()">Temizle</button>
+</div>
+
+<div id="info">Şekil seç</div>
+<div id="tutorialBox"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+
+<script>
+
+/* ================= SPEAK ================= */
+function speak(text){
+let msg=new SpeechSynthesisUtterance(text);
+msg.lang="tr-TR";
+speechSynthesis.speak(msg);
+}
+
+function showTutorial(text){
+const box=document.getElementById("tutorialBox");
+if(!box) return;
+box.textContent=text;
+box.style.display="block";
+speak(text);
+}
+
+/* ================= START ================= */
+function startApp(){
+document.getElementById("intro").style.display="none";
+setTimeout(()=>showTutorial("Shape AI uygulamasına hoş geldin."),800);
+
+setTimeout(()=>showTutorial("Şekilleri yazı veya sesle oluşturabilirsin."),4000);
+
+setTimeout(()=>showTutorial("Bir şekle tıklayıp X Y Z ile hareket ettirebilirsin."),8000);
+
+setTimeout(()=>showTutorial("Animasyon ve temizleme sistemleri aktiftir."),12000);
+
+setTimeout(()=>{
+const t = document.getElementById("tutorialBox");
+if(t) t.style.display = "none";
+},16000);
+}
+
+/* ================= SCENE ================= */
+const scene=new THREE.Scene();
+
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+camera.position.set(10,8,12);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const orbit=new THREE.OrbitControls(camera,renderer.domElement);
+const transform=new THREE.TransformControls(camera,renderer.domElement);
+scene.add(transform);
+
+scene.add(new THREE.AmbientLight(0xffffff,1));
+
+/* ================= PRO FIXES ================= */
+
+// 🔥 WORLD SPACE (OKLAR SABİT)
+transform.setSpace("world");
+
+// 🔥 SADECE TAŞIMA (ROTATE + SCALE KAPALI)
+transform.showRotate = false;
+transform.showScale = false;
+
+// 🔥 SNAP (hafif hizalama)
+transform.setTranslationSnap(0.5);
+
+// 🔥 CAMERA LOCK FIX
+transform.addEventListener("dragging-changed", (e)=>{
+orbit.enabled = !e.value;
+});
+
+scene.add(new THREE.GridHelper(200,100,0x00ffff,0x003333));
+
+const floor=new THREE.Mesh(
+new THREE.PlaneGeometry(200,200),
+new THREE.MeshStandardMaterial({color:0x02040a})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.y=-0.01;
+scene.add(floor);
+
+/* ================= PARTICLES ================= */
+const geo=new THREE.BufferGeometry();
+const count=1000;
+const pos=new Float32Array(count*3);
+
+for(let i=0;i<count*3;i++){
+pos[i]=(Math.random()-0.5)*100;
+}
+
+geo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+
+scene.add(new THREE.Points(
+geo,
+new THREE.PointsMaterial({color:0x00ffff,size:0.12})
+));
+
+/* ================= OBJECTS ================= */
+let objects=[];
+let selected=null;
+let anim=true;
+
+/* ================= SHAPES (50+) ================= */
+const shapes = {
+
+box:{geo:()=>new THREE.BoxGeometry(2,2,2),name:"Küp",desc:"Küp, üç boyutlu bir geometrik cisimdir ve tüm yüzleri kare şeklindedir. Toplam 6 yüzü, 12 ayrıtı (kenarı) ve 8 köşesi bulunur. Küpün en önemli özelliği, bütün kenarlarının eşit uzunlukta olması ve tüm yüzlerinin birbirine dik olmasıdır. Bu nedenle küp, düzgün çokyüzlüler arasında yer alır."},
+sphere:{geo:()=>new THREE.SphereGeometry(1.2,32,32),name:"Küre",desc:"Küre, üç boyutlu bir geometrik cisimdir ve yüzeyi tamamen eğridir; yani düz bir yüzü, ayrıtı veya köşesi yoktur. Küre, bir merkez noktaya eşit uzaklıktaki tüm noktaların oluşturduğu şekildir. Bu nedenle tamamen simetrik bir yapıya sahiptir."},
+cone:{geo:()=>new THREE.ConeGeometry(1,2,32),name:"Koni",desc:"Koni, üç boyutlu bir geometrik cisimdir. Bir daire tabanı ve bu tabanın çevresindeki tüm noktaların tepe adı verilen tek bir noktaya birleşmesiyle oluşur. Koni, bir taban ve bir yan yüzeyden oluşur. Tabanı daire şeklindedir, yan yüzeyi ise eğridir ve tepe noktasında sonlanır."},
+cylinder:{geo:()=>new THREE.CylinderGeometry(1,1,2,32),name:"Silindir",desc:"Silindir, üç boyutlu bir geometrik cisimdir. Alt ve üst olmak üzere birbirine paralel ve eş iki daire tabanı ile bu tabanları birleştiren eğri bir yan yüzeyden oluşur. Silindirin köşesi yoktur ve ayrıt olarak yalnızca tabanların çevresini oluşturan dairesel sınırlar bulunur."},
+circle:{geo:()=>new THREE.CircleGeometry(1.5,32),name:"Daire",desc:"Daire, düzlemde bulunan iki boyutlu bir geometrik şekildir. Bir merkez noktasına eşit uzaklıktaki tüm noktaların oluşturduğu kapalı şekle daire denir. Dairenin iç bölgesiyle birlikte tamamına daire, sadece sınırına ise çember denir."},
+
+box_small:{geo:()=>new THREE.BoxGeometry(1,1,1),name:"Küçük Küp",desc:"Mini küp"},
+sphere_big:{geo:()=>new THREE.SphereGeometry(2,32,32),name:"Büyük Küre",desc:"Büyük küre"},
+
+torus:{geo:()=>new THREE.TorusGeometry(1,0.4,16,100),name:"Halka",desc:"Halka, düzlemde iç içe geçmiş iki daire arasında kalan bölgedir. Yani biri büyük, biri küçük olmak üzere aynı merkezli iki dairenin arasındaki boşluk halka olarak adlandırılır. Bu nedenle halka, ortası boş olan bir daire şeklindedir."},
+capsule:{geo:()=>new THREE.CapsuleGeometry(0.5,1,16,32),name:"Kapsül",desc:"Kapsül, düzlemde ve üç boyutta kullanılabilen bir geometrik şekildir. En yaygın anlamıyla, bir dikdörtgenin iki kısa kenarına yarım daireler eklenmesiyle oluşan yuvarlatılmış bir şekildir. Bu nedenle kapsül, hem düz kenarlara hem de eğri sınırlara sahiptir."},
+
+tetrahedron:{geo:()=>new THREE.TetrahedronGeometry(1),name:"Piramit",desc:"Piramit, üç boyutlu bir geometrik cisimdir. Bir taban çokgeni ve bu tabanın tüm köşelerinin tek bir tepe noktasında birleşmesiyle oluşur. Tabanı üçgen, kare veya daha fazla kenarlı bir çokgen olabilir. İsimlendirme de taban şekline göre yapılır; örneğin kare tabanlı piramit, üçgen tabanlı piramit gibi."},
+octahedron:{geo:()=>new THREE.OctahedronGeometry(1),name:"Sekizgen",desc:"8 yüzlü"},
+dodecahedron:{geo:()=>new THREE.DodecahedronGeometry(1),name:"12 Yüzlü",desc:"Çok yüzlü"},
+icosahedron:{geo:()=>new THREE.IcosahedronGeometry(1),name:"20 Yüzlü",desc:"Küresel"},
+
+square:{geo:()=>new THREE.PlaneGeometry(2,2),name:"Kare",desc:"Kare, iki boyutlu bir geometrik şekildir ve düzgün dörtgendir. Dört kenarı ve dört köşesi vardır. En önemli özelliği, tüm kenarlarının eşit uzunlukta ve tüm iç açılarının 90 derece olmasıdır."},
+triangle:{geo:()=>new THREE.ConeGeometry(1,2,3),name:"Üçgen",desc:"Üçgen, üç kenarı ve üç köşesi olan iki boyutlu bir geometrik şekildir. En basit çokgenlerden biridir. Üç doğru parçasının uç uca bağlanmasıyla oluşur."},
+diamond:{geo:()=>new THREE.OctahedronGeometry(1.2),name:"Elmas",desc:"Parlak"}
+
+};
+
+/* ================= CREATE ================= */
+function createShape(k){
+let s=shapes[k];
+if(!s)return;
+
+let m=new THREE.Mesh(
+s.geo(),
+new THREE.MeshStandardMaterial({color:0x00ffff})
+);
+
+// 🔥 STABIL POZİSYON FIX
+m.position.set(0,1,0);
+m.rotation.set(0,0,0);
+m.scale.set(1,1,1);
+
+scene.add(m);
+objects.push(m);
+
+selected=m;
+transform.attach(m);
+
+document.getElementById("info").innerHTML=
+"<h2>"+s.name+"</h2><p>"+s.desc+"</p>";
+
+speak(s.name+" "+s.desc);
+}
+
+/* ================= RUN ================= */
+function run(){
+let c=document.getElementById("cmd").value.toLowerCase();
+
+for(let k in shapes){
+if(c.includes(k) || c.includes(shapes[k].name.toLowerCase())){
+createShape(k);
+return;
+}
+}
+}
+
+/* ================= MIC ================= */
+let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let mic=null;
+let listening=false;
+let lastText="";
+
+const micBtn=document.getElementById("micBtn");
+
+function startMic(){
+if(!SpeechRecognition || listening) return;
+
+mic=new SpeechRecognition();
+mic.lang="tr-TR";
+mic.interimResults=true;
+
+mic.onresult=(e)=>{
+lastText=e.results[e.results.length-1][0].transcript.toLowerCase().trim();
+document.getElementById("cmd").value=lastText;
+};
+
+mic.start();
+listening=true;
+}
+
+function stopMic(){
+if(!mic) return;
+
+try{mic.stop();}catch(e){}
+
+listening=false;
+
+if(lastText){
+run();
+speak(lastText);
+}
+
+mic=null;
+lastText="";
+}
+
+/* HOLD BUTTON */
+micBtn.addEventListener("mousedown",startMic);
+micBtn.addEventListener("mouseup",stopMic);
+micBtn.addEventListener("mouseleave",stopMic);
+micBtn.addEventListener("touchstart",(e)=>{e.preventDefault();startMic();});
+micBtn.addEventListener("touchend",stopMic);
+
+/* ================= CLEAR ================= */
+function clearScene(){
+objects.forEach(o=>scene.remove(o));
+objects=[];
+transform.detach();
+selected=null;
+speechSynthesis.cancel();
+speak("temizlendi");
+}
+
+/* ================= ANIM ================= */
+function toggleAnim(){
+anim=!anim;
+}
+
+/* ================= LOOP ================= */
+function animate(){
+requestAnimationFrame(animate);
+
+scene.rotation.y+=0.0002;
+
+if(anim){
+objects.forEach(o=>{
+if(!transform.dragging){
+o.rotation.x+=0.01;
+o.rotation.y+=0.01;
+}
+});
+}
+
+renderer.render(scene,camera);
+}
+animate();
+
+</script>
+
+</body>
+</html>
